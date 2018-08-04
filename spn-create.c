@@ -4,9 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include "shiftFunc.h"
-#include "myLib.h"
+
 
 /*
  * 函数名：ROL           rotateRight
@@ -18,39 +16,6 @@
 
 
 #define KEYScheduleRound 5
-
-
-char * stringSplit(char * string, char *delim, int len) { // len左移的数量
-    char result[100][5];
-    if (len > 0) {
-        int i = 0;
-        char *temp = malloc(sizeof(char) * 5 * (len / 4));
-        strcpy(temp, strtok(string, delim));
-        strcat(temp, " ");
-        for (int j = 1; j < (len / 4); j++) {
-            strcpy(temp, strtok(NULL, delim));
-            strcat(temp, " ");
-        }
-        char *p;
-        while((p = strtok(NULL, delim))) {
-            strcpy(result[i], p);
-            strcat(result[i], " ");
-            i++;
-        }
-        strcpy(result[i], temp);
-    } else {
-        int i = 0;
-        strcpy(result[i], strtok(string, delim));
-        strcat(result[i], " ");
-        char *p;
-        while((p = strtok(NULL, delim))) {
-            i++;
-            strcpy(result[i], p);
-            strcat(result[i], " ");
-        }
-    }
-    return result;
-}
 
 // S盒子
 unsigned int substitutionBox(int input) {
@@ -71,19 +36,17 @@ unsigned int substitutionBox(int input) {
        case 13: return 0x9;
        case 14: return 0x0;
        case 15: return 0x7;
+       default: return 0x0;
    }
 }
 
+// S盒子代换
 unsigned int substitutionChange(unsigned int input) {   // 输入0b 0001 1100 0010 0011
     // 确定是16位的。
     unsigned int block1 = (0xf000 & input) >> 12;   // 0001 0000 0000 0000
     unsigned int block2 = (0x0f00 & input) >> 8;   // 0000 1100 0000 0000
     unsigned int block3 = (0x00f0 & input) >> 4;   // 0000 0000 0010 0000
     unsigned int block4 = (0x000f & input) >> 0;   // 0000 0000 0000 0011
-//    printf("%d ", block1);
-//    printf("%d ", block2);
-//    printf("%d ", block3);
-//    printf("%d ", block4);
     block1 = substitutionBox(block1) << 12;
     block2 = substitutionBox(block2) << 8;
     block3 = substitutionBox(block3) << 4;
@@ -96,82 +59,73 @@ unsigned int xorChange(unsigned int input, unsigned int key) {
     return input ^ key;
 }
 
-
+// 密钥编排方案
 unsigned int * keySchedule(unsigned int keyString) {
-    // 0011 1010 1001 0100 1101 0110 0011 1111;
-
     int keyBlockLen = KEYScheduleRound;
     unsigned int * keyArr = malloc(sizeof(unsigned int) * keyBlockLen);
     for (int i = 0; i < keyBlockLen; i++) {
         keyArr[keyBlockLen - i - 1] = keyString & 0xffff;
-        printf("%x ", keyArr[keyBlockLen - i - 1]);
         keyString >>= 4;
     }
     return keyArr;
 }
 
-int permutationBox(int input) {
-
+// P盒子
+unsigned int permutationChange(unsigned int input) {    // 0b 0100 0101 1101 0001
+    int pBox[16] = {1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15, 4, 8, 12, 16};
+    unsigned int xorBox[16] = {0x8000, 0x4000, 0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100, 0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1};
+    unsigned int result[16];
+    unsigned int xorResult = 0x0000;
+    for (int i = 0; i < 16; i++) {
+        if ((i+1) - pBox[i] <= 0) {
+            result[i] = (xorBox[i] & input) >> abs(pBox[i] - (i + 1));
+        } else {
+            result[i] = ((xorBox[i] & input) << abs(pBox[i] - (i + 1))) & 0xffff;
+        }
+        xorResult |= result[i];
+    }
+    return xorResult;
 }
 
-int getOneBlock(int num) {
-
-}
 
 int main (void) {
     // 0011 1010 1001 0100 1101 0110 0011 1111;
-
-    // 密钥编排：
+    // 密钥编排获得 KEYScheduleRound 轮的密钥
     unsigned int keyString = 0b00111010100101001101011000111111;
     int keyBlockLen = KEYScheduleRound;
     unsigned int * keyArr = malloc(sizeof(unsigned int) * keyBlockLen);
-    keyArr = keySchedule(keyString);
-    for (int i = 0; i < keyBlockLen; i++) {
-        printf("\n\n%x", keyArr[i]);
+    memcpy(keyArr, keySchedule(keyString), sizeof(unsigned int) * keyBlockLen);
+
+    unsigned int * wArr = malloc(sizeof(unsigned int) * keyBlockLen);
+    unsigned int * vArr = malloc(sizeof(unsigned int) * keyBlockLen);
+    unsigned int * uArr = malloc(sizeof(unsigned int) * keyBlockLen);
+
+    // SPN加密
+    unsigned int x = 0b0010011010110111;
+    wArr[0] = x;
+    printf("w0: %x\n", wArr[0]);
+
+    // 循环进行 KEYScheduleRound-2 轮
+    for (int r = 1; r < KEYScheduleRound - 1; r++) {   // r => [1,3]
+        printf("k%d: %x\n", r, keyArr[r-1]);
+        uArr[r] = xorChange(wArr[r-1], keyArr[r-1]);
+        printf("u%d: %x\n", r, uArr[r]);
+        // S盒子
+        vArr[r] = substitutionChange(uArr[r]);
+        printf("v%d: %x\n", r, vArr[r]);
+        // P盒子
+        wArr[r] = permutationChange(vArr[r]);
+        printf("w%d: %x\n", r, wArr[r]);
     }
 
-    // 输入加密文字
-    int x = 0b0001110000100011;
-    printf("hhhh%x\n", substitutionChange(a));
-    unsigned short unit = 0xfefe;
-//    printf("%x\n", getHighBitOne(4));
-//    printf("%x\n", ROL(unit, 6));
-//    bitPrintf(ROR(unit, 4));
-//    bitPrintf(ROR(unit, 6));
-    int k = 0x3A94D63f;
-
-
-
-
-
-
-//    bitPrintf(k);
+    // 之后进行一次白化，一次S盒子
+    uArr[KEYScheduleRound - 1] = xorChange(wArr[KEYScheduleRound - 2], keyArr[KEYScheduleRound - 1 -1]);
+    // S盒子
+    vArr[KEYScheduleRound - 1] = substitutionChange(uArr[KEYScheduleRound - 1]);
+    // 输出再做一次白化
+    unsigned int y;
+    y = xorChange(vArr[KEYScheduleRound - 1], keyArr[KEYScheduleRound - 1]);
+    printf("result: %x\n", y);
     unsigned short ddd;
-    printf("%x", substitutionBox(10));
-    ddd = ROL(k, 4);
-
-    char s[100] = "0011 1010 1001 0100 1101 0110 0011 1111";;
-    char *delim = " ";
-    char *p;
-    int res;
-    char result[100][5];
-    strcpy(result, stringSplit(s, delim, 4));
-    printf("\n");
-    printf("\n");
-    printf("%sdone\n", *result);
-    strcpy(result, stringSplit(result, delim, 4));
-    printf("%sdone\n", *result);
-    strcpy(result, stringSplit(result, delim, 0));
-    printf("%sdone", *result);
-
-    int test1 = 0x3; // 0011
-    int test2 = 0xa; // 1010
-    printf("%x", test1 | test2);
-
-
 }
-
-
-// x: 0010 0110 1011 0111
-// k: 0011 1010 1001 0100 1101 0110 0011 1111
 
