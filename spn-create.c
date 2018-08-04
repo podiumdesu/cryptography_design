@@ -5,16 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-/*
- * 函数名：ROL           rotateRight
- * 输入：  (unsigned short unit, int nBit)
- * 输出：  unsigned short result
- * 示例：  *input:* 1010 1010 0001 0101, 6
- *       *output:* 1000 0101 0110 1010
- */
-
-
 #define KEYScheduleRound 5
 
 // S盒子
