@@ -5,7 +5,27 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define KEYScheduleRound 5
+//#define KEYScheduleRound 5
+
+#include "spn_create.h"
+
+
+/*
+ * file: spn_linear_analysis.c
+ * 输入：
+ * 输出：
+ */
+
+
+int KEYScheduleRound = 0;
+
+void putBitIntoArr (unsigned int * desArr, unsigned int ori) {
+    // 暂定是16位的。
+    for (int i = 15; i >= 0; i--) {
+        desArr[i] = ori & 0x0001;
+        ori >>= 1;
+    }
+}
 
 // S盒子
 unsigned int substitutionBox(int input) {
@@ -30,6 +50,29 @@ unsigned int substitutionBox(int input) {
    }
 }
 
+unsigned int substitutionReverseChange(unsigned int input) {
+    switch(input) {
+        case 0: return 0xe;
+        case 1: return 0x3;
+        case 2: return 0x4;
+        case 3: return 0x8;
+        case 4: return 0x1;
+        case 5: return 0xc;
+        case 6: return 0xa;
+        case 7: return 0xf;
+        case 8: return 0x7;
+        case 9: return 0xd;
+        case 10: return 0x9;
+        case 11: return 0x6;
+        case 12: return 0xb;
+        case 13: return 0x2;
+        case 14: return 0x0;
+        case 15: return 0x5;
+        default: return 0x0;
+    }
+}
+
+
 // S盒子代换
 unsigned int substitutionChange(unsigned int input) {   // 输入0b 0001 1100 0010 0011
     // 确定是16位的。
@@ -49,8 +92,18 @@ unsigned int xorChange(unsigned int input, unsigned int key) {
     return input ^ key;
 }
 
+int getKeyStringBlockLength (unsigned long keyString) {
+    int i = 0;
+    while (keyString > 0) {
+        keyString >>= 4;
+        i++;
+    }
+    return i;
+}
+//unsigned int keyBlockLength = sizeof(keyString)
 // 密钥编排方案
 unsigned int * keySchedule(unsigned int keyString) {
+
     int keyBlockLen = KEYScheduleRound;
     unsigned int * keyArr = malloc(sizeof(unsigned int) * keyBlockLen);
     for (int i = 0; i < keyBlockLen; i++) {
@@ -77,11 +130,40 @@ unsigned int permutationChange(unsigned int input) {    // 0b 0100 0101 1101 000
     return xorResult;
 }
 
+unsigned int permutationReverseChange(unsigned int input) {
+    unsigned int final;
+    final = permutationChange(input);
+    return final;
+}
 
-int main (void) {
+unsigned int spn_decode(unsigned int y, unsigned long keyString) {
+    KEYScheduleRound = getKeyStringBlockLength(keyString);
+    int keyBlockLen = KEYScheduleRound;
+    unsigned int * keyArr = malloc(sizeof(unsigned int) * keyBlockLen);
+    memcpy(keyArr, keySchedule(keyString), sizeof(unsigned int) * keyBlockLen);
+
+    unsigned int * wArr = malloc(sizeof(unsigned int) * keyBlockLen);
+    unsigned int * vArr = malloc(sizeof(unsigned int) * keyBlockLen);
+    unsigned int * uArr = malloc(sizeof(unsigned int) * keyBlockLen);
+
+    // spn解密
+    vArr[KEYScheduleRound - 1] = xorChange(y, keyArr[KEYScheduleRound - 1]);
+    uArr[KEYScheduleRound - 1] = substitutionReverseChange(vArr[KEYScheduleRound - 1]);
+    wArr[KEYScheduleRound - 2] = xorChange(keyArr[KEYScheduleRound - 1 - 1], uArr[KEYScheduleRound - 1]);
+
+    for (int r = KEYScheduleRound - 2; r > 0; r--) {
+        vArr[r] = permutationReverseChange(wArr[r]);
+        uArr[r] = substitutionReverseChange(vArr[r]);
+        wArr[r-1] = xorChange(uArr[r], keyArr[r-1]);
+    }
+    return wArr[0];
+}
+
+unsigned int spn_create(unsigned int x, unsigned long keyString) {
+    KEYScheduleRound = getKeyStringBlockLength(keyString) - 3;
     // 0011 1010 1001 0100 1101 0110 0011 1111;
     // 密钥编排获得 KEYScheduleRound 轮的密钥
-    unsigned int keyString = 0b00111010100101001101011000111111;
+//    unsigned int keyString = 0b00111010100101001101011000111111;
     int keyBlockLen = KEYScheduleRound;
     unsigned int * keyArr = malloc(sizeof(unsigned int) * keyBlockLen);
     memcpy(keyArr, keySchedule(keyString), sizeof(unsigned int) * keyBlockLen);
@@ -91,31 +173,34 @@ int main (void) {
     unsigned int * uArr = malloc(sizeof(unsigned int) * keyBlockLen);
 
     // SPN加密
-    unsigned int x = 0b0010011010110111;
+
     wArr[0] = x;
-    printf("w0: %x\n", wArr[0]);
+    //printf("w0: %x\n", wArr[0]);
 
     // 循环进行 KEYScheduleRound-2 轮
     for (int r = 1; r < KEYScheduleRound - 1; r++) {   // r => [1,3]
-        printf("k%d: %x\n", r, keyArr[r-1]);
+        //printf("k%d: %x\n", r, keyArr[r-1]);
         uArr[r] = xorChange(wArr[r-1], keyArr[r-1]);
-        printf("u%d: %x\n", r, uArr[r]);
+        //printf("u%d: %x\n", r, uArr[r]);
         // S盒子
         vArr[r] = substitutionChange(uArr[r]);
-        printf("v%d: %x\n", r, vArr[r]);
+        //printf("v%d: %x\n", r, vArr[r]);
         // P盒子
         wArr[r] = permutationChange(vArr[r]);
-        printf("w%d: %x\n", r, wArr[r]);
+        //printf("w%d: %x\n", r, wArr[r]);
     }
 
-    // 之后进行一次白化，一次S盒子
+    // 之后进行一次S盒子，一次白化
+    // r = 4
     uArr[KEYScheduleRound - 1] = xorChange(wArr[KEYScheduleRound - 2], keyArr[KEYScheduleRound - 1 -1]);
     // S盒子
     vArr[KEYScheduleRound - 1] = substitutionChange(uArr[KEYScheduleRound - 1]);
     // 输出再做一次白化
     unsigned int y;
     y = xorChange(vArr[KEYScheduleRound - 1], keyArr[KEYScheduleRound - 1]);
-    printf("result: %x\n", y);
-    unsigned short ddd;
+
+    return y;
 }
+
+
 
