@@ -8,19 +8,16 @@
 #include <time.h>
 #include "spn_create.h"
 
-#define T 8000     // 测试明密文对数
+#define T 12000     // 测试明密文对数
 
-unsigned int spn_linear_analysis () {
+unsigned int spn_linear_analysis (unsigned int initKeyString) {
 
     unsigned int X[T];
     unsigned int Y[T];
     unsigned int bitX[16] = {0};
     unsigned int bitU[16] = {0};
-
-
-    unsigned int initKeyString = 0b00111010100101001101011000111111;
-    initKeyString = 0b00111010100100101101011000110011;
-    printf("正确密钥为 %x", initKeyString);
+    printf("正在进行spn的线性分析。\n");
+    printf("正确密钥为 %x\n", initKeyString);
     unsigned int L1, L2, y2, y4, v2, v4, u2, u4, u, z, x5;
     unsigned int key_L1, key_L2, maxkey1, maxkey2;
     unsigned int maxkey;
@@ -56,7 +53,6 @@ unsigned int spn_linear_analysis () {
             }
         }
     }
-    printf("可以喝个茶了\n");
     int max = -1;
     unsigned int Y_test;
     int flag1 , flag2 = 1;
@@ -98,5 +94,5 @@ unsigned int spn_linear_analysis () {
     end = clock();
     printf("The time is : %f s\n", (double)((end - start) / CLOCKS_PER_SEC));
 
-    return 0;
+    return maxkey;
 };
