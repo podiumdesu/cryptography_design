@@ -37,10 +37,6 @@ mpz_t * generate_rand_num() {
     mpz_nextprime(result[0], bignum1);
     mpz_nextprime(result[1], bignum2);
 
-    gmp_printf("result0 = %Zd\n", result[0]);
-    gmp_printf("result1 = %Zd\n", result[1]);
-//    gmp_printf("resultdd0 = %Zd\n", bignum1);
-//    gmp_printf("resultdd1 = %Zd\n", bignum2);
     mpz_clear(bignum1);
     mpz_clear(bignum2);
     return result;
@@ -82,39 +78,24 @@ mpz_t * gen_key_pair() {
     mpz_mul(result[4], key_f, mul_temp);     // key_f = (p-1) * (q-1)
     mpz_mul(result[5], key_e, mul_temp);     // e
 
-
     mpz_clear(primes[0]);
     mpz_clear(primes[1]);
     mpz_clear(key_n);
     mpz_clear(key_d);
     mpz_clear(key_f);
     mpz_clear(key_e);
+
     for (int i = 0; i < 6; i++) {
         gmp_printf("result[%d] = %Zd\n", i, result[i]);
     }
 
     return result;
 
-//    char * buf_p = malloc(sizeof(char) * (bitN + 10));
-//    char * buf_q = malloc(sizeof(char) * (bitN + 10));
-//    char * buf_n = malloc(sizeof(char) * (bitN + 10));
-//    char * buf_d = malloc(sizeof(char) * (bitN + 10));
-//    char * buf_f = malloc(sizeof(char) * (bitN + 10));
-//
-//
-//    mpz_get_str(buf_p, BASE, primes[0]);
-//    result
-//    mpz_get_str(buf_q, BASE, primes[1]);
-
-
 }
 
 int main (void) {
     mpz_t * num_arr = malloc(sizeof(mpz_t) * 2);
-    // 生成 p q;
-//    memcpy(num_arr, generate_rand_num(), (sizeof(mpz_t) * 2));
-//    gmp_printf("p = %Zd\n", num_arr[0]);
-//    gmp_printf("q = %Zd\n", num_arr[1]);
+
     mpz_t * result = gen_key_pair();
 
     mpz_t key_p, key_q, key_n, key_fayN, key_e, key_d;
