@@ -5,6 +5,7 @@
 #include "rsaGen.h"
 #include <time.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdio.h>
 #include "gmp-6.1.2/gmp.h"
@@ -65,7 +66,7 @@ mpz_t * gen_key_pair() {
     mpz_init(key_d);
     mpz_invert(key_d, key_e, key_f);    // 求key_e mod key_f 的逆元
 
-    gmp_printf("key_d= %Zd\n", key_d);
+    gmp_printf("test key_d= %Zd\n", key_d);
 
     mpz_t * result = malloc(sizeof(mpz_t) * 20);
     mpz_t mul_temp;
@@ -85,9 +86,9 @@ mpz_t * gen_key_pair() {
     mpz_clear(key_f);
     mpz_clear(key_e);
 
-    for (int i = 0; i < 6; i++) {
-        gmp_printf("result[%d] = %Zd\n", i, result[i]);
-    }
+//    for (int i = 0; i < 6; i++) {
+//        gmp_printf("result[%d] = %Zd\n", i, result[i]);
+//    }
 
     return result;
 
@@ -97,6 +98,7 @@ mpz_t * gen_key_pair() {
 
 // 模重复平方法
 void mod_exp(mpz_t result, const mpz_t exponent, const mpz_t base, const mpz_t n) {
+//    gmp_printf("模重复平方法中：M = %Zd\n", base);
     char exp[2048+ 10];
     mpz_get_str(exp, 2, exponent);   // e转换为二进制
     mpz_t x, power;
@@ -111,31 +113,201 @@ void mod_exp(mpz_t result, const mpz_t exponent, const mpz_t base, const mpz_t n
         }
         mpz_mul(power, power, power);
         mpz_mod(power, power, n);  // power = power^2 mod n
+//        gmp_printf("dddd =  %Zd\n", x);
     }
     mpz_set(result, x);
-    gmp_printf("x = %Zd\n", x);
+//    gmp_printf("结果 =  %Zd\n", x);
 }
 
 char * mod_Encryption(const char * plain_text, const char * key_n, mpz_t key_e) {
-    mpz_t M, res, n, e;
+
+    mpz_t M, C, n, e;
     mpz_init_set_str(M, plain_text, 10);
-
-
     mpz_init_set_str(n, key_n, 10);
-    mpz_init_set_ui(res, 0);
+    mpz_init_set_ui(C, 0);
     mpz_t mul_temp;
     mpz_init_set_ui(mul_temp, 1);
     mpz_mul(e, key_e, mul_temp);
 
-    mpz_t test;
-    mpz_init_set_ui(test, 95);
-    mod_exp(res, e, test, n);
+//    mpz_t test;
+//    mpz_init_set_ui(test, 95);
+    mod_exp(C, e, M, n);
 
     char * result = malloc(sizeof(char) * (bitN + 10));
-    mpz_get_str(result, 10, res);
+    mpz_get_str(result, 10, C);
 
     return result;
 
+
+
+
+//    mpz_t M, res, n, e;    mpz_get_str(exp, 2, exponent);   // e转换为二进制
+//    mpz_init_set_str(M, plain_text, 10);
+//
+//
+//    mpz_init_set_str(n, key_n, 10);
+//    mpz_init_set_ui(res, 0);
+//    mpz_t mul_temp;
+//    mpz_init_set_ui(mul_temp, 1);
+//    mpz_mul(e, key_e, mul_temp);
+//
+//    mpz_t test;
+//    mpz_init_set_ui(test, 95);
+//    mod_exp(res, e, test, n);
+//
+//    char * result = malloc(sizeof(char) * (bitN + 10));
+//    mpz_get_str(result, 10, res);
+//
+//    return result;
+
+}
+
+char * mod_Decryption(const char * cipher_text, const char * key_n, const char * key_d) {
+    mpz_t M, C, n, d;
+
+    mpz_init_set_str(C, cipher_text, BASE);
+//    gmp_printf("\n需要解码的C = %Zd\n", C);
+    mpz_init_set_str(n, key_n, BASE);
+//    gmp_printf("\nkey_d = %s\n", key_d);
+    mpz_init_set_str(d, key_d, BASE);
+    mpz_init(M);
+
+    mod_exp(M, d, C, n);
+//    gmp_printf("\nM = %Zd\n", M);
+    char * result = malloc(sizeof(char) * (bitN + 10));
+    mpz_get_str(result, BASE, M);
+
+    return result;
+
+}
+
+
+
+void China(mpz_t result, const char * P, const char * Q, const char * X, const char * E, const char * N) {
+    mpz_t p, q, x, e, n;
+    mpz_t Xp, Xq, ep, eq, P1, Q1, Yp, Yq, total;
+    mpz_inits(Xp, Xq, ep, eq, P1, Q1, Yp, Yq, total, NULL);
+
+    mpz_init_set_str(p, P, BASE);
+    mpz_init_set_str(q, Q, BASE);
+    mpz_init_set_str(n, N, BASE);
+    mpz_init_set_str(x, X, BASE);
+    mpz_init_set_str(e, E, BASE);
+//    printf("X = %s\n", X);
+
+    mpz_mod(Xp, x, p);
+    mpz_mod(Xq, x, q);
+
+    mpz_sub_ui(P1, p, 1);
+    mpz_sub_ui(Q1, q, 1);
+
+    mpz_mod(ep, e, P1);
+    mpz_mod(eq, e, Q1);
+
+    mod_exp(Yp, ep, Xp, p);
+    mod_exp(Yq, eq, Xq, q);
+
+    mpz_invert(Q1, q, p);
+    mpz_invert(P1, p, q);
+
+    mpz_mul(q, Q1, q);
+    mpz_mul(q, Yp, q);
+    mpz_mul(p, P1, p);
+    mpz_mul(p, Yp, p);
+    mpz_add(total, p, q);
+    mpz_mod(result, total, n);
+}
+
+char * China_Encryption(const char * plain_text, const char * key_p, const char * key_q, const char * key_n, const mpz_t key_e) {
+
+    mpz_t M, C, n, e;
+    mpz_init_set_str(M, plain_text, 10);
+    mpz_init_set_str(n, key_n, 10);
+    mpz_init_set_ui(C, 0);
+    mpz_t mul_temp;
+    mpz_init_set_ui(mul_temp, 1);
+    mpz_mul(e, key_e, mul_temp);
+
+//    mpz_t test;
+//    mpz_init_set_ui(test, 95);
+    mod_exp(C, e, M, n);
+
+    char * result = malloc(sizeof(char) * (bitN + 10));
+    mpz_get_str(result, 10, C);
+
+    return result;
+
+
+    // todo: CHINA
+//    mpz_t res;
+//    mpz_init_set_ui(res, 0);
+//
+//    char e_c[2048 + 10];
+////    itoa(key_e, e_c, 16);
+//    mpz_get_str(e_c, 16, key_e);
+//
+//    gmp_printf("key_e = %Zd e_c = %s\n", key_e, e_c);
+////    sprintf(e_c, "%x", key_e); //将100转为16进制表示的字符串。
+//    China(res, key_p, key_q, plain_text, e_c, key_n);
+//
+//    char * result = malloc(sizeof(char) * (bitN + 10));
+//    mpz_get_str(result, BASE, res);
+//    return result;
+}
+
+void montgomery(mpz_t res, const char * base, const char * exponent, const char * n) {
+    mpz_t A, B, N, D;
+    mpz_t temp;
+    mpz_init_set_ui(temp, 0);
+    mpz_init_set_str(A, base, BASE);
+    mpz_init_set_str(B, exponent, BASE);
+    mpz_init_set_str(N, n, BASE);
+    mpz_init_set_ui(D, 1);
+
+    while (mpz_cmp_ui(B, 0)) {
+        if (mpz_odd_p(B)) {
+            mpz_mul(temp, D, A);
+            mpz_mod(D, temp, N);
+            mpz_sub_ui(B, B, 1);
+        } else {
+            mpz_pow_ui(temp, A, 2);
+            mpz_mod(A, temp, N);
+            mpz_divexact_ui(B, B, 2);
+        }
+    }
+    mpz_set(res, D);
+}
+
+char * mont_encrypt(const char * plain_text, const char * key_n, mpz_t key_e) {
+    mpz_t e;
+    mpz_t x, n, res;
+
+    mpz_init(res);
+    mpz_init_set_str(x, plain_text, BASE);
+    mpz_init_set_str(n, key_n, BASE);
+//    mpz_init_set_ui(e, key_e);
+
+    char e_c[2048+10];
+    mpz_get_str(e_c, 16, key_e);
+
+    montgomery(res, plain_text, e_c, key_n);
+
+    char * result = malloc(sizeof(char) * (bitN + 10));
+    mpz_get_str(result, BASE, res);
+
+    return result;
+}
+
+char * mont_decrypt(const char * cipher_text, const char * key_n, const char * key_d) {
+    mpz_t M;
+    mpz_init(M);
+
+    montgomery(M, cipher_text, key_d, key_n);
+
+    char * result = malloc(sizeof(char) * (bitN + 10));
+    mpz_get_str(result, BASE, M);
+
+    return result;
 }
 
 int main (void) {
@@ -168,12 +340,30 @@ int main (void) {
     char * buf_fayN = malloc(sizeof(bitN + 10));
 
     mpz_get_str(buf_n, 10, key_n);
+    mpz_get_str(buf_d, 10, key_d);
+    mpz_get_str(buf_p, 10, key_p);
+    mpz_get_str(buf_q, 10, key_q);
+    mpz_get_str(buf_fayN, 10, key_fayN);
 
+    printf("buf_d = %s\n", buf_d);
     char plain_text[20];
-    strcpy(plain_text, "hello,world");
-    mod_Encryption(plain_text, buf_n, key_e);
-
+    strcpy(plain_text, "87");
+    printf("main function plain_text = %s\n", plain_text);
+    char * mod_result = mod_Encryption(plain_text, buf_n, key_e);
+    gmp_printf("in main function: (mod encryption of M) is %s\n", mod_result);
+    char * mod_decryption_res = mod_Decryption(mod_result, buf_n, buf_d);
+    gmp_printf("in main function: (mod encryption of C) is %s\n", mod_decryption_res);
 //    printf("mod_result = %s", mod_result);
+    strcpy(plain_text, "87");
+//    printf("main function plain_text = %s\n", plain_text);
+    char * china_result = China_Encryption(plain_text, buf_p, buf_q, buf_n, key_e);
+    gmp_printf("in main function: (china encryption of C) is %s\n", china_result);
+
+    strcpy(plain_text, "87");
+    char * mont_result = mont_encrypt(plain_text, buf_n, key_e);
+    gmp_printf("in main function: (mont encryption of C) is %s\n", mont_result);
+    char * mont_decryption_res = mont_decrypt(mont_result, buf_n, buf_d);
+    gmp_printf("in main function: (mod decryption of C) is %s\n", mont_decryption_res);
 
     return 0;
 }
