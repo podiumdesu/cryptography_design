@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <cstring>
+//#include <cstring>
 #include <stdlib.h>
 #include <openssl/sha.h>
 #include <openssl/comp.h>
@@ -105,7 +105,7 @@ int File_read() {
 	unsigned char digest[SHA_DIGEST_LENGTH], Digest[SHA_DIGEST_LENGTH]; //hash使用
 	int block, Num, i, m, z, Len;
 //	printf("请输入明文名称\n");
-
+	int fileLength;
 //	scanf("%s", filename);
 	printf("开始读入文件......\n");
 	if ((fq = fopen("11.txt" ,"r")) == NULL) {
@@ -114,6 +114,7 @@ int File_read() {
 	}
 	fseek(fq, 0, SEEK_END);
 	i = ftell(fq); //文件长度
+	fileLength = i;
 	Plain = (char *)malloc(sizeof(char)*(i + 1));
 	rewind(fq);
 	fread(Plain, 1, i, fq);//读取文件
@@ -161,7 +162,7 @@ int File_read() {
 		sprintf(&Hash1[i * 2], "%02x", (unsigned int)Digest[i]);
 		sprintf(&testHash1[i * 2], "%02x", (unsigned int)digest[i]);
 	}
-	printf("\nSHA1 digest: %s\n", Hash1);
+	printf("\nSHA1 Digest: %s\n", Hash1);
 	printf("\nSHA1 digest: %s\n", testHash1);
 	printf("\n对明文P：%s  \n进行加密：digest=%s\n", P, digest);
 	// 获得Hash后的值
@@ -217,11 +218,11 @@ int File_read() {
 		return -1;
 	}
 	group2=EC_GROUP_new_by_curve_name(nid);
-//    if(group1==NULL)
-//    {
-//        printf("EC_GROUP_new_by_curve_name err!\n");
-//        return -1;
-//    }
+    if(group2==NULL)
+    {
+        printf("EC_GROUP_new_by_curve_name err!\n");
+        return -1;
+    }
 	/* 设置密钥参数 */
 	/*Sets the EC_GROUP of a EC_KEY object.*/
 	ret=EC_KEY_set_group(key1,group1);
@@ -267,105 +268,15 @@ int File_read() {
 	berr=BIO_new(BIO_s_file());
 	//BIO_set_fp(berr,stdout,BIO_NOCLOSE);
 	/* 签名数据，本例未做摘要，可将 digest 中的数据看作是 sha1 摘要结果 */
-	ret=ECDSA_sign(0,digest,20,signature,&sig_len,key1);
+	ret=ECDSA_sign(0,Digest,20,signature,&sig_len,key1);
 	if(ret!=1)
 	{
 		ERR_print_errors(berr);
 		printf("sign err!\n");
 		return -1;
 	}
-/**************************************************************/
 
 
-//
-//
-///*************************SPN对称加密   利用k 加密明文和hash值**************************/
-//	printf("HASH前P = %s\n", P);
-//	// todo: what use for it?????
-//
-//	for (z = 0; z <= Num; z++){
-//		temp = (unsigned long long *)(t);
-//		printf("temp = %s\n", temp);
-////		strncpy(cipher[z], temp, 8);
-//		cipher[z] = *temp;
-//		printf("cipher[%d] = %s\n", z, temp);
-//		t += 8;
-//	}
-////	cipher[Num+1] = "\0";
-//	printf("cipher = %s\n", cipher);
-//
-//	// 将从文件中读取的明文放入数组中
-//
-//	// 此处对文件进行spn的加密
-//	Cipher[0] = spn_encryption(cipher[0] ^ iv, K);//明文加密，放入Cipher中，cbc模式
-//	for (z = 1; z <= Num; z++)
-//		Cipher[z] = spn_encryption(Cipher[z - 1] ^ cipher[z], K);
-//	if ((fp = fopen("111.txt", "w+")) == NULL) {
-//		printf("打开文件%s出现错误\n", filename);
-//		return 0;
-//	}
-//	for (i = 0; i < Num+1 ; i++)
-//		fwrite(&Cipher[i], sizeof(unsigned long long), 1, fp); // 将密文写入文件中
-//	fclose(fp);
-//	fclose(fq);
-///*************************SPN对称加密************************/
-//
-//
-//
-//
-///*************************SPN 对称解密**************************/
-//	if ((fq = fopen("111.txt", "r")) == NULL) {    // 打开文件
-//		printf("打开文件%s时出现错误\n", filename);
-//		return 0;
-//	}
-//	fseek(fq, 0, SEEK_END);
-//	i = ftell(fq);   // 文件长度
-//	unsigned long long *Cip;
-//	block = 8;
-//	Num = i / block;
-//	Cip = (unsigned long long *)malloc(sizeof(unsigned long long)*Num);
-//	rewind(fq);
-//	fread(Cip, 1, i, fq);
-//
-//	cipher = (unsigned long long *)malloc(sizeof(unsigned long long)*(Num + 1));
-//	Cipher = (unsigned long long *)malloc(sizeof(unsigned long long)*(Num + 1));
-//	for (z = 0; z <Num; z++)
-//		cipher[z] = Cip[z];
-//	Cipher[0] = spn_dncryption(cipher[0], K) ^ iv;
-//	// 此处进行解密
-//	for (z = 1; z < Num; z++)
-//		Cipher[z] = spn_dncryption(cipher[z], K) ^ cipher[z - 1];
-//	if ((fp = fopen("1111.txt", "w+")) == NULL) {
-//		printf("打开文件%s时出现错误\n", filename);
-//		return 0;
-//	}
-//	for (i = 0; i < Num; i++)
-//		fwrite(&Cipher[i], sizeof(unsigned long long), 1, fp);
-//
-//	P =(char *) Cipher;
-//	SHA1((unsigned char*)P, Len, (unsigned char*)&digest);
-//	for (int i = 0; i < SHA_DIGEST_LENGTH; i++)
-//		sprintf(&Hash1[i * 2], "%02x", (unsigned int)digest[i]);
-//	printf("\nSHA1 digest: %s\n", Hash1);
-//
-//	printf("\ndigest=%s\n", digest);
-//
-//	fclose(fp);
-//	fclose(fq);
-//	/*************************SPN对称解密**************************/
-
-
-
-/**************************椭圆曲线签名************************/
-
-	/* 验证签名 */
-	ret=ECDSA_verify(0,digest,20,signature,sig_len,key1);
-	if(ret!=1)
-	{
-		ERR_print_errors(berr);
-		printf("ECDSA_verify err!\n");
-		return -1;
-	}
 	/* 获取对方公钥，不能直接引用 */
 	pubkey2 = EC_KEY_get0_public_key(key2);
 	/* 生成一方的共享密钥 */
@@ -385,6 +296,214 @@ int File_read() {
 		else
 			printf("生成共享密钥失败\n");
 	}
+/**************************************************************/
+
+
+//
+//
+/*************************SPN对称加密   利用k 加密明文和hash值**************************/
+	printf("HASH前P = %s\n", P);
+	// todo: what use for it?????
+
+	for (z = 0; z <= Num; z++){
+		temp = (unsigned long long *)(t);
+		printf("temp = %s\n", temp);
+//		strncpy(cipher[z], temp, 8);
+		cipher[z] = *temp;
+		printf("cipher[%d] = %s\n", z, temp);
+		t += 8;
+	}
+//	cipher[Num+1] = "\0";
+	printf("cipher = %s\n", cipher);
+
+	// 将从文件中读取的明文放入数组中
+
+	// 此处对文件进行spn的加密
+	Cipher[0] = spn_encryption(cipher[0] ^ iv, K);//明文加密，放入Cipher中，cbc模式
+	for (z = 1; z <= Num; z++)
+		Cipher[z] = spn_encryption(Cipher[z - 1] ^ cipher[z], K);
+	if ((fp = fopen("111.txt", "w+")) == NULL) {
+		printf("打开文件%s出现错误\n", filename);
+		return 0;
+	}
+	for (i = 0; i < Num+1 ; i++)
+		fwrite(&Cipher[i], sizeof(unsigned long long), 1, fp); // 将密文写入文件中
+	fclose(fp);
+	fclose(fq);
+/*************************SPN对称加密************************/
+
+
+//
+///************************ 椭圆曲线加密key  *************************/
+//	//加密操作，对点M1（此处以G为例）加密，C2=rG，C1=G+rK，
+//
+////其中K为B的公钥。
+//
+////OpenSSL里的函数功能：EC_POINT_mul是点乘，EC—POINT_
+//
+////add是点加。
+//	EC_GROUP * encryptKeyGroup;
+//	const EC_POINT * encryptKeyC1, encryptKeyC2, encryptKeyB;
+//	const EC_POINT * encryptKeyQ, encryptKeyK;
+//	const BIGNUM * encryptKeyM;
+//	const BN_CTX * encryptKeyCtx;
+//
+//
+//	encryptKeyK = EC_KEY_new();
+//
+//	/* 获取实现的椭圆曲线个数 */
+//	crv_len = EC_get_builtin_curves(NULL, 0);
+//	curves = (EC_builtin_curve *)malloc(sizeof(EC_builtin_curve) * crv_len);
+//	/* 获取椭圆曲线列表 */
+//	EC_get_builtin_curves(curves, crv_len);
+//	/*
+//    nid=curves[0].nid;会有错误，原因是密钥太短
+//    */
+//	/* 选取一种椭圆曲线 */
+//	nid=curves[25].nid;
+////    printf("%d\n", nid);
+//	/* 根据选择的椭圆曲线生成s密钥参数 group */
+//	encryptKeyGroup = EC_GROUP_new_by_curve_name(nid);
+//
+//	/* 设置密钥参数 */
+//	/*Sets the EC_GROUP of a EC_KEY object.*/
+//	ret=EC_KEY_set_group(encryptKeyK ,encryptKeyGroup);
+//	if(ret!=1) {
+//		printf("EC_KEY_set_group err.\n");
+//		return -1;
+//	}
+//	/* 生成公钥和私钥 */
+//	ret = EC_KEY_generate_key(encryptKeyK);
+//	if (ret != 1) {
+//		printf("EC_KEY_generate_key err.\n");
+//		return -1;
+//	}
+//	int KEYLen = i2o_ECPublicKey()
+//
+//
+//
+//	/** Computes r = generator * n + q * m
+//645  *  \param  group  underlying EC_GROUP object
+//646  *  \param  r      EC_POINT object for the result
+//647  *  \param  n      BIGNUM with the multiplier for the group generator (optional)
+//648  *  \param  q      EC_POINT object with the first factor of the second summand
+//649  *  \param  m      BIGNUM with the second factor of the second summand
+//650  *  \param  ctx    BN_CTX object (optional)
+//651  *  \return 1 on success and 0 if an error occured
+//652  */
+////	int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *n, const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx);
+////	EC_POINT_mul( group, C2, NULL,G,r,ctx);
+////	EC_POINT_mul(group,B,NULL,K,r,ctx);
+////	EC_POINT_add( group, C1,G,B,ctx);
+//
+////	C2=MQ，C1=Q+MK，
+////其中K为B的公钥。
+//	EC_POINT_mul(encryptKeyGroup, encryptKeyC2, NULL, encryptKeyQ ,encryptKeyM,encryptKeyCtx);
+//
+//	EC_POINT_mul(encryptKeyGroup, encryptKeyB, NULL, encryptKeyK, encryptKeyM, encryptKeyCtx);
+//
+//	EC_POINT_add(encryptKeyGroup, encryptKeyC1, encryptKeyQ , encryptKeyB, encryptKeyCtx);
+//
+//
+///************************ 椭圆曲线加密key  *************************/
+//
+//
+///************************ 椭圆曲线解密key  *************************/
+////解密操作，对得到的(C1，C2)解密得到M2=Cl-kC2
+//
+//	EC_POINT_mul(group,R,NULL, C2,k,ctx);
+//
+//	EC_POINT_invert( group,R,ctx);
+//
+//	EC_POINT_add( group, M2, Cl,R,ctx);
+//
+///************************ 椭圆曲线解密key  *************************/
+//
+//
+
+
+
+
+/*************************SPN 对称解密**************************/
+	if ((fq = fopen("111.txt", "r")) == NULL) {    // 打开文件
+		printf("打开文件%s时出现错误\n", filename);
+		return 0;
+	}
+	fseek(fq, 0, SEEK_END);
+	i = ftell(fq);   // 文件长度
+	unsigned long long *Cip;
+	block = 8;
+	Num = i / block;
+	Cip = (unsigned long long *)malloc(sizeof(unsigned long long)*Num);
+	rewind(fq);
+	fread(Cip, 1, i, fq);
+
+	cipher = (unsigned long long *)malloc(sizeof(unsigned long long)*(Num + 1));
+	Cipher = (unsigned long long *)malloc(sizeof(unsigned long long)*(Num + 1));
+	for (z = 0; z <Num; z++)
+		cipher[z] = Cip[z];
+	Cipher[0] = spn_dncryption(cipher[0], K) ^ iv;
+	// 此处进行解密
+	for (z = 1; z < Num; z++)
+		Cipher[z] = spn_dncryption(cipher[z], K) ^ cipher[z - 1];
+	printf("Cipher = %s\n", Cipher);
+//	Cipher[]
+	if ((fp = fopen("1111.txt", "w+")) == NULL) {
+		printf("打开文件%s时出现错误\n", filename);
+		return 0;
+	}
+
+
+	P =(char *) Cipher;
+
+
+	SHA1((unsigned char*)P, Len, (unsigned char*)&digest);
+	for (int i = 0; i < SHA_DIGEST_LENGTH; i++)
+		sprintf(&Hash1[i * 2], "%02x", (unsigned int)Digest[i]);
+	printf("\nSHA1 digest: %s\n", Hash1);
+
+	printf("\ndigest=%s\n", digest);
+
+
+	// 此处在处理解密后显示的值
+	P[Num * block - Padding] = '\0';
+	printf("解密后 P = %s\n", P);
+	printf("Num = %d\n", Num);
+	int tempTick;
+	int k;
+	for (k = 0, tempTick = 0; k < Num; k++) {
+		printf("P[%d] = %s\n", k, &P[k]);
+		fwrite(&P[tempTick], sizeof(unsigned long long), 1, fp);
+		tempTick+=8;
+	}
+	printf("tempTick = %d, fileLength = %d\n", tempTick, fileLength);
+
+	// todo: 处理一下padding后多添加的值
+//	for (; tempTick < fileLength; tempTick++) {
+//		fwrite(&P[tempTick], sizeof(unsigned long long), 1, fp);
+//	}
+//	for (i = 0; i < 1; i++) {
+//		printf("P[%d] = %s\n", i, &P[i]);
+//
+//	}
+
+	fclose(fp);
+	fclose(fq);
+	/*************************SPN对称解密**************************/
+
+
+	printf("处理椭圆曲线前，digest = %s\n", digest);
+/**************************椭圆曲线验签***********************/
+
+	/* 验证签名 */
+	ret=ECDSA_verify(0,digest,20,signature,sig_len,key1);
+	if(ret!=1)
+	{
+		ERR_print_errors(berr);
+		printf("ECDSA_verify err!\n");
+		return -1;
+	}
+
 	printf("test ok!\n");
 	BIO_free(berr);
 	EC_KEY_free(key1);
