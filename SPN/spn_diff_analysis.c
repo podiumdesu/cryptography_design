@@ -10,9 +10,28 @@
 #include "spn_create.h"
 
 
+//
+//int main( void )
+//{
+//    long    i = 10000000L;
+//    clock_t start, finish;
+//    double  duration;
+//    /* 测量一个事件持续的时间*/
+//    printf( "Time to do %ld empty loops is ", i );
+//    start = clock();
+//    while( i-- )      ;
+//    finish = clock();
+//    duration = (double)(finish - start) / CLOCKS_PER_SEC;
+//    printf( "%f seconds\n", duration );
+//    system("pause");
+//}
+
 #define T 8000
 
 unsigned int spn_diff_analysis(unsigned int initKeyString) {
+    clock_t startClock, finish;
+    startClock = clock();
+    double duration;
     unsigned int X[T];
     unsigned int Y[T];
     unsigned int X_1[T];
@@ -114,8 +133,10 @@ unsigned int spn_diff_analysis(unsigned int initKeyString) {
             }
         }
     }
-    end = clock();
+//    end = clock();
 //    printf("The time is : %f s\n", (double)((end - start) / CLOCKS_PER_SEC));
-
+    finish = clock();
+    duration = (double)(finish - startClock) / CLOCKS_PER_SEC;
+    printf( "%f seconds\n", duration );
     return maxkey;
 }

@@ -107,7 +107,6 @@ int getKeyStringBlockLength (unsigned long keyString) {
 //unsigned int keyBlockLength = sizeof(keyString)
 // 密钥编排方案
 unsigned int * keySchedule(unsigned int keyString) {
-
     int keyBlockLen = KEYScheduleRound;
     unsigned int * keyArr = malloc(sizeof(unsigned int) * keyBlockLen);
     for (int i = 0; i < keyBlockLen; i++) {

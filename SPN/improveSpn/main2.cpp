@@ -85,6 +85,7 @@ int main()
                 getchar();
                 break;
             case 3:
+                printf("正在生成随机检测所需要的密文...\n");
                 unsigned long long * cipherdata;
                 cipherdata=(unsigned long long*)malloc(sizeof(unsigned long long)*max);
                 cipherdata[0]=spn_encode(x1^iv1,k1);
@@ -98,7 +99,7 @@ int main()
                 for(i=0;i<max;i++)
                     fwrite(&cipherdata[i],sizeof(unsigned long long),1,fp);
                 fclose(fp);
-                printf("随机检测所需要的密文生成成功！");
+                printf("随机检测所需要的密文生成成功！\n");
                 printf("请按任意键继续...");
                 getchar();
                 getchar();
